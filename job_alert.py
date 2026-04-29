@@ -5,8 +5,10 @@ import sqlite3
 # =========================
 # CONFIG (FILL THIS IN)
 # =========================
-BOT_TOKEN = "8651840623:AAGnTssUlg8CWOT7ix9xmjElrO7I0RmYH7M"
-CHAT_ID = "7320711615"
+import os
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 URL = "https://www.onlinejobs.ph/jobseekers/jobsearch?jobkeyword=data"
 
