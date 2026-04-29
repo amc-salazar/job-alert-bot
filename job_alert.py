@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import sqlite3
 import os
+import psycopg2
 # =========================
 # CONFIG (FILL THIS IN)
 # =========================
@@ -35,7 +36,7 @@ def send_telegram(message):
 # =========================
 # DATABASE SETUP
 # =========================
-conn = sqlite3.connect("jobs.db")
+conn = psycopg2.connect(os.getenv("DATABASE_URL"))
 c = conn.cursor()
 
 c.execute("""
