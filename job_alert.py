@@ -120,17 +120,22 @@ def save_job(job):
 
 
 def format_job(job):
+    title = job.get("title", "N/A").strip()
+    salary = job.get("salary", "N/A").strip()
+    job_type = job.get("type", "N/A").strip()
+    posted = job.get("posted", "N/A").strip()
+    link = job.get("link", "")
+
     return f"""
-💼 {job['title']}
+💼 {title}
 
-💰 Salary: {job['salary']}
-🕒 Type: {job['type']}
-📅 Posted: {job['posted']}
+💰 Salary: {salary}
+🕒 Type: {job_type}
+📅 Posted: {posted}
 
-🔗 Apply:
-{job['link']}
+🔗 Apply here:
+{link}
 """
-
 
 # =========================
 # MAIN RUNNER
