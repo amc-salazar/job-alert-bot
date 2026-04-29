@@ -1,22 +1,24 @@
 import requests
 from bs4 import BeautifulSoup
-import sqlite3
 import os
 import psycopg2
+import time
+
 # =========================
-# CONFIG (FILL THIS IN)
+# ENV VARIABLES
 # =========================
-
-
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not found")
+
+if not BOT_TOKEN or not CHAT_ID:
+    raise ValueError("BOT_TOKEN or CHAT_ID missing")
+
 URL = "https://www.onlinejobs.ph/jobseekers/jobsearch?jobkeyword=data"
-
 headers = {"User-Agent": "Mozilla/5.0"}
-
 
 # =========================
 # TELEGRAM FUNCTION
@@ -32,11 +34,10 @@ def send_telegram(message):
 
     requests.post(url, data=payload)
 
-
 # =========================
-# DATABASE SETUP
+# DATABASE SETUP (POSTGRES)
 # =========================
-conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+conn = psycopg2.connect(DATABASE_URL, sslmode="require")
 c = conn.cursor()
 
 c.execute("""
@@ -47,7 +48,6 @@ CREATE TABLE IF NOT EXISTS jobs (
 )
 """)
 conn.commit()
-
 
 # =========================
 # SCRAPER
@@ -62,8 +62,6 @@ def scrape_jobs():
     job_cards = soup.select("div.jobpost-cat-box")
 
     for job in job_cards:
-
-        # LINK
         a_tag = job.find("a", href=True)
         if not a_tag:
             continue
@@ -75,23 +73,18 @@ def scrape_jobs():
             continue
         seen.add(job_id)
 
-        # TITLE
         title_tag = job.select_one("h4")
         title = title_tag.get_text(" ", strip=True) if title_tag else "N/A"
 
-        # TYPE OF WORK
         type_tag = job.select_one("span.badge")
         job_type = type_tag.text.strip() if type_tag else "N/A"
 
-        # SALARY
         salary_tag = job.select_one("dd.col")
         salary = salary_tag.text.strip() if salary_tag else "N/A"
 
-        # POSTED DATE
         date_tag = job.select_one("p em")
         posted = date_tag.text.replace("Posted on", "").strip() if date_tag else "N/A"
 
-        # DESCRIPTION (short)
         desc_tag = job.select_one("div.desc")
         desc = desc_tag.get_text(" ", strip=True)[:200] if desc_tag else ""
 
@@ -107,14 +100,9 @@ def scrape_jobs():
 
     return jobs
 
-
 # =========================
-# HELPERS
+# SAVE (POSTGRES SAFE)
 # =========================
-def is_new(job_id):
-    c.execute("SELECT 1 FROM jobs WHERE id=?", (job_id,))
-    return c.fetchone() is None
-
 def save_job(job):
     c.execute("""
         INSERT INTO jobs (id, title, link)
@@ -123,24 +111,19 @@ def save_job(job):
     """, (job["id"], job["title"], job["link"]))
     conn.commit()
 
+    return c.rowcount > 0  # True if inserted
 
+# =========================
+# FORMAT MESSAGE
+# =========================
 def format_job(job):
-    title = job.get("title", "N/A").strip()
-    salary = job.get("salary", "N/A").strip()
-    job_type = job.get("type", "N/A").strip()
-    posted = job.get("posted", "N/A").strip()
-    link = job.get("link", "")
-
-    return f"""
-💼 {title}
-
-💰 Salary: {salary}
-🕒 Type: {job_type}
-📅 Posted: {posted}
-
-🔗 Apply here:
-{link}
-"""
+    return (
+        f"💼 {job.get('title','N/A')}\n"
+        f"💰 {job.get('salary','N/A')}\n"
+        f"🕒 {job.get('type','N/A')}\n"
+        f"📅 {job.get('posted','N/A')}\n\n"
+        f"🔗 {job.get('link','')}"
+    )
 
 # =========================
 # MAIN RUNNER
@@ -152,8 +135,8 @@ def run():
     new_jobs = []
 
     for job in jobs:
-        if is_new(job["id"]):
-            save_job(job)
+        inserted = save_job(job)
+        if inserted:
             new_jobs.append(job)
 
     if new_jobs:
@@ -164,12 +147,9 @@ def run():
     else:
         print("No new jobs.")
 
-
 # =========================
-# EXECUTE
+# LOOP (24/7)
 # =========================
-import time
-
 if __name__ == "__main__":
     while True:
         try:
