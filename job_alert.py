@@ -1,12 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 import sqlite3
-
+import os
 # =========================
 # CONFIG (FILL THIS IN)
 # =========================
-import os
 
+
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
