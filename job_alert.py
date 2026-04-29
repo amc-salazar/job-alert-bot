@@ -115,10 +115,12 @@ def is_new(job_id):
     c.execute("SELECT 1 FROM jobs WHERE id=?", (job_id,))
     return c.fetchone() is None
 
-
 def save_job(job):
-    c.execute("INSERT INTO jobs VALUES (?, ?, ?)",
-              (job["id"], job["title"], job["link"]))
+    c.execute("""
+        INSERT INTO jobs (id, title, link)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (id) DO NOTHING
+    """, (job["id"], job["title"], job["link"]))
     conn.commit()
 
 
