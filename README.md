@@ -1,8 +1,8 @@
-# 💼 Job Alert Automation System (24/7)
+# 💼 Job Alert Automation System (24/7 Bot)
 
-An automated job scraping and notification system that monitors remote job listings and sends real-time alerts via Telegram.
+An end-to-end automated job scraping and notification system that monitors job listings and sends real-time alerts via Telegram.
 
-The system runs continuously in the cloud and prevents duplicate alerts using a database layer.
+The system runs continuously in the cloud and uses a PostgreSQL database to prevent duplicate alerts and ensure data persistence.
 
 ---
 
@@ -12,33 +12,52 @@ This project is a fully automated pipeline that:
 
 - Scrapes job postings from OnlineJobs.ph
 - Extracts structured job data (title, salary, type, date)
-- Stores jobs in a SQLite database for deduplication
-- Detects new job postings only
+- Stores jobs in a PostgreSQL database
+- Detects new job postings using database constraints
 - Sends real-time alerts via Telegram
 - Runs 24/7 on cloud deployment (Railway)
 
 ---
 
 ## 🏗️ System Architecture
-Job Source Website
-↓
-Python Scraper
-↓
-Data Parser / Cleaner
-↓
-SQLite Database (Deduplication)
-↓
-New Job Detection
-↓
-Telegram Bot API
-↓
-User Notifications
+            ┌────────────────────────────┐
+            │   Railway Cloud (24/7)     │
+            │   Scheduler / Loop         │
+            └────────────┬───────────────┘
+                         ↓
+            ┌────────────────────────────┐
+            │  Python Scraper Bot        │
+            └────────────┬───────────────┘
+                         ↓
+            ┌────────────────────────────┐
+            │  Job Website (OnlineJobs)  │
+            └────────────┬───────────────┘
+                         ↓
+            ┌────────────────────────────┐
+            │  Data Parsing / Cleaning   │
+            └────────────┬───────────────┘
+                         ↓
+            ┌────────────────────────────┐
+            │ PostgreSQL Database        │
+            │ (Deduplication Layer)      │
+            └────────────┬───────────────┘
+                         ↓
+            ┌────────────────────────────┐
+            │ Telegram Bot API           │
+            └────────────┬───────────────┘
+                         ↓
+            ┌────────────────────────────┐
+            │ User Notifications         │
+            └────────────────────────────┘
 
 ---
 
 ## ☁️ Deployment
 
-The system is deployed on a cloud runtime using Railway for continuous 24/7 execution.
+- Hosted on Railway
+- Runs continuously (24/7 background worker)
+- Uses environment variables for secure credentials
+- Connected to managed PostgreSQL database
 
 ---
 
@@ -47,7 +66,8 @@ The system is deployed on a cloud runtime using Railway for continuous 24/7 exec
 - Python
 - BeautifulSoup (Web Scraping)
 - Requests (HTTP calls)
-- SQLite (Local database storage)
+- PostgreSQL (Cloud database)
+- psycopg2 (PostgreSQL adapter)
 - Telegram Bot API (Notifications)
 - Railway (Cloud deployment)
 
@@ -66,59 +86,57 @@ The system is deployed on a cloud runtime using Railway for continuous 24/7 exec
 
 ## ⚙️ How It Works
 
-1. The scraper runs every few minutes
+1. The scraper runs every 5 minutes
 2. Extracts job listings from the website
-3. Compares results with stored database
-4. Filters only NEW jobs
-5. Sends formatted message to Telegram
-6. Stores job to prevent duplicates
+3. Attempts to insert jobs into PostgreSQL
+4. Database enforces uniqueness (`PRIMARY KEY`)
+5. Only new jobs are successfully inserted
+6. New jobs trigger Telegram alerts
 
 ---
 
 ## 🧠 Key Features
 
-- ✔ Fully automated job tracking
-- ✔ Duplicate prevention system
-- ✔ Real-time Telegram alerts
-- ✔ Cloud-based 24/7 execution
+- ✔ Fully automated job tracking system
+- ✔ 24/7 cloud execution
+- ✔ PostgreSQL-backed persistence
+- ✔ Duplicate prevention using database constraints
+- ✔ Real-time Telegram notifications
 - ✔ Lightweight and scalable design
+
+---
+
+---
+
+## 🔒 Environment Variables
+
+The system uses secure environment variables:
+
+- `DATABASE_URL` → PostgreSQL connection
+- `BOT_TOKEN` → Telegram bot token
+- `CHAT_ID` → Telegram chat ID
 
 ---
 
 ## 📌 Purpose
 
-This project was built to demonstrate:
+This project demonstrates:
 
 - Web scraping automation
-- Backend pipeline design
-- Cloud deployment (CI-style execution)
+- Backend data pipeline design
+- Cloud deployment and continuous execution
+- Database-driven deduplication logic
 - Real-time notification systems
-- Data deduplication logic
-
----
-
-## 📁 Project Structure
-job-alert-bot/
-│── job_alert.py
-│── requirements.txt
-│── README.md
-│── jobs.db (ignored in production)
-│── .gitignore
-
----
-
-## 🔒 Security Note
-
-Sensitive credentials (Telegram bot token and chat ID) are stored using environment variables in production deployment.
 
 ---
 
 ## 📈 Future Improvements
 
-- Multi-platform job scraping (LinkedIn, 104, etc.)
-- AI-based job filtering (skills matching)
+- Multi-source job scraping (LinkedIn, 104, etc.)
+- Keyword-based filtering (Data / Python / Analyst)
+- AI-based job relevance scoring
 - Web dashboard for monitoring
-- Advanced analytics (salary trends, job types)
+- Salary and job trend analytics
 
 ---
 
